@@ -12,6 +12,7 @@ struct notizenApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .modelContainer(for: Notiz.self)
         }
     }
 }

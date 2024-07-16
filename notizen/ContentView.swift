@@ -6,34 +6,55 @@
 //
 
 import SwiftUI
+import SwiftData
+
+@Model
+class Notiz: ObservableObject {
+    var id: UUID
+    var inhalt: String
+    
+    init(inhalt: String) {
+        self.id = UUID()
+        self.inhalt = inhalt
+    }
+}
 
 struct ContentView: View {
-    @State var notizen: [String] = ["Schwimmen", "Einkaufen"]
-    @State var notiz = ""
+    
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Notiz.inhalt) private var notizen: [Notiz]
+    @State private var notiz = ""
     
     var body: some View {
-        VStack {
-            List {
-                ForEach(notizen, id: \.self) { notiz in
-                    Text(notiz)
+        NavigationView {
+            VStack {
+                List {
+                    ForEach(notizen, id: \.id) { notiz in
+                        Text(notiz.inhalt)
+                    }
+                    .onDelete(perform: { indexSet in
+                        indexSet.forEach { index in
+                            let notizToDelete = notizen[index]
+                            modelContext.delete(notizToDelete)
+                        }
+                    })
                 }
-                .onDelete(perform: { indexSet in
-                    
-                })
+                .navigationTitle("Notizen")
+                HStack {
+                    TextField("Neue Notiz", text: $notiz)
+                    Button("Hinzufügen") {
+                        let neueNotiz = Notiz(inhalt: notiz)
+                        modelContext.insert(neueNotiz)
+                        notiz = ""
+                    }
+                }
+                .padding(.horizontal)
             }
-            .navigationTitle("Notitzen")
-            HStack {
-                TextField("Neue Notiz", text: $notiz)
-                Button("Hinzufügen") {
-                    
-                    notiz = ""
-                }
-            }.padding(.horizontal)
         }
     }
 }
-    
 
 #Preview {
     ContentView()
 }
+
