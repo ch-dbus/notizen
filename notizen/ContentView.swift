@@ -12,10 +12,26 @@ import SwiftData
 class Notiz: ObservableObject {
     var id: UUID
     var inhalt: String
+    var events: [Event]
     
     init(inhalt: String) {
         self.id = UUID()
         self.inhalt = inhalt
+        self.events = []
+        
+    }
+}
+
+@Model
+class Event {
+    var id: UUID
+    var info: String
+    var date: Date
+    
+    init(info: String, date: Date) {
+        self.id = UUID()
+        self.info = info
+        self.date = date
     }
 }
 
@@ -30,14 +46,15 @@ struct ContentView: View {
             VStack {
                 List {
                     ForEach(notizen, id: \.id) { notiz in
-                        Text(notiz.inhalt)
-                    }
-                    .onDelete(perform: { indexSet in
-                        indexSet.forEach { index in
-                            let notizToDelete = notizen[index]
-                            modelContext.delete(notizToDelete)
+                        NavigationLink(destination: NotizDetail(notiz: notiz)) {
+                            Text(notiz.inhalt)
+                                .swipeActions {
+                                    Button("Delete", role: .destructive) {
+                                        modelContext.delete(notiz)
+                                    }
+                                }
                         }
-                    })
+                    }
                 }
                 .navigationTitle("Notizen")
                 HStack {
@@ -54,7 +71,37 @@ struct ContentView: View {
     }
 }
 
+struct NotizDetail: View {
+    
+    @Bindable var notiz: Notiz
+    @Environment(\.modelContext) private var modelContext
+
+    
+    var body: some View {
+        VStack {
+            TextField("Inhalt", text: $notiz.inhalt)
+                .onAppear{
+                    let event = Event(info: "Geöffnet", date: Date())
+                    notiz.events.append(event)
+                }
+            List {
+                ForEach(notiz.events) { event in
+                    HStack{
+                        Text(event.info)
+                        Text("\(event.date)")
+                    }
+                }
+                .onDelete(perform: { indexSet in
+                    for index in indexSet {
+                        let event = notiz.events.remove(at: index)
+                        modelContext.delete(event)
+                    }
+                })
+            }
+        }
+    }
+}
+
 #Preview {
     ContentView()
 }
-
